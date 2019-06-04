@@ -5,11 +5,15 @@ import numpy as np
 import scipy.interpolate as interpolate
 import matplotlib.pyplot as plt
 from matplotlib.widgets import TextBox
-mouse_key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Control Panel\Mouse", 0, winreg.KEY_READ)
+from itertools import *
+mouse_key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Control Panel\Mouse", 0, winreg.KEY_ALL_ACCESS)
 x_key = winreg.QueryValueEx(mouse_key, 'SmoothMouseXCurve')
 y_key = winreg.QueryValueEx(mouse_key, 'SmoothMouseYCurve')
 x_res_list = []
 y_res_list = []
+
+final_x_res_list = []
+final_y_res_list = []
 
 
 b_picked = False
@@ -23,12 +27,27 @@ threshold_update_tick_to_draw = 10
 fig, ax = plt.subplots()
 aa = np.linspace(0,40,num=400)
 ax.set_xbound(-5,45)
-ax.set_ybound(-5,475)	
+ax.set_ybound(-5,475)
 
 
 
 def encode_reg(new_x_coords, new_y_coords):
-	pass
+	out_x_list = []
+	out_y_list = []
+	out_x_hex_list = []
+	out_y_hex_list = []
+	for i in range(0,5,1):
+		out_x_list.append( str(new_x_coords[i] ).split('.') )
+		out_y_list.append( str(new_y_coords[i] ).split('.') )
+
+	out_x_int_list = list([int(y) for x in out_x_list for y in x])
+	out_y_hex_list = list([hex(int(y)) for x in out_y_list for y in x])
+
+	print(list( struct.pack('hh',) for i in out_x_int_list))
+
+
+
+			
 
 def decode_reg(in_reg_key, ch_res_list):
 	for i in (range(35,0,-8)):
@@ -81,6 +100,11 @@ def interp_and_draw(xvals, yvals):
 	global fig
 	global ax
 	global count_update_tick
+	global final_x_res_list
+	global final_y_res_list
+
+	final_x_res_list = xvals
+	final_y_res_list = yvals
 
 	uv_spline = interpolate.UnivariateSpline(xvals, yvals, k=3, ext=0, s = 0)
 	lin_interp = interpolate.interp1d(xvals,yvals, kind='quadratic', fill_value='extrapolate')
@@ -90,15 +114,22 @@ def interp_and_draw(xvals, yvals):
 	ax.set_autoscale_on(False)
 	ax.set_xbound(-5,45)
 	ax.set_ybound(-5,475)
-
-	
-	#ax.plot(aa, uv_interped_points,'r')
 	ax.plot(xvals, yvals, 'bo',picker=5)
 	ax.plot(aa, lin_points, 'g')
 	plt.draw()
 
-def cb_save_reg_file():
-	pass
+def cb_save_reg_file(self):
+	global final_x_res_list
+	global final_y_res_list
+
+	global x_key
+	global y_key
+	global mouse_key
+
+	#winreg.SaveKey(mouse_key,'C:\\Users\\Keegan\\Downloads\\reg_stuff\\src\\uh.reg')
+	
+
+	encode_reg(final_x_res_list, final_y_res_list)
 
 
 decode_reg(x_key, x_res_list)
